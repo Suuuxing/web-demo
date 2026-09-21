@@ -23,13 +23,18 @@ textarea{resize:vertical;line-height:1.6}
 .row{display:flex;gap:8px}
 .row .btn{margin-top:10px}
 .warn{font-size:.72em;color:#ffb347;margin-top:8px}
-.log{font-family:ui-monospace,Menlo,monospace;font-size:.7em;color:#98989f;max-height:130px;overflow:auto;margin-top:8px;white-space:pre-wrap}
-input[type=range]{-webkit-appearance:none;background:transparent;margin:0;padding:0}
+.log{font-family:ui-monospace,Menlo,monospace;font-size:.7em;color:#98989f;max-height:120px;overflow:auto;margin-top:8px;white-space:pre-wrap}
+.rng{display:flex;align-items:center;gap:8px;margin-top:8px}
+.rng span{font-size:.76em;color:#98989f;flex:0 0 30px}
+.rng b{font-size:.86em;width:34px;text-align:right;font-weight:600}
+input[type=range]{-webkit-appearance:none;background:transparent;margin:0;padding:0;flex:1}
 input[type=range]::-webkit-slider-runnable-track{height:4px;background:#3a3a3c;border-radius:2px}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#e0524c;margin-top:-9px}
 #gate{position:fixed;inset:0;background:#0e0e10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;z-index:9}
 #gate input{text-align:center;font-size:1.1em;letter-spacing:.3em}
 #gate .btn{max-width:240px;margin-top:14px}
+.pname{font-weight:700;font-size:.88em}
+.pnote{font-size:.7em;color:#98989f;margin-top:2px}
 </style>
 </head>
 <body>
@@ -43,58 +48,72 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div class="card">
   <div class="sec">状态</div>
   <div class="state"><i class="dot" id="dot"></i><span id="st">未连接</span></div>
-  <div class="warn">用 Bluefy 浏览器打开这一页。用之前先问过他。</div>
+  <div class="sec" style="margin-top:8px" id="nowline">当前：停着</div>
+  <button class="btn stop" id="stopall">全 停</button>
+  <div class="warn">用 Bluefy 打开这一页。用之前先问过他。连接那一下只能你自己点。</div>
 </div>
 
 <div class="card">
-  <div class="sec">① 连接（这一下只能你自己点）</div>
-  <input id="svc" placeholder="Service UUID">
-  <input id="chr" placeholder="Characteristic UUID">
-  <div class="row">
-    <button class="btn ghost" data-p="fff0">预设 FFF0</button>
-    <button class="btn ghost" data-p="ff00">预设 FF00</button>
-    <button class="btn ghost" data-p="ffe0">预设 FFE0</button>
-  </div>
+  <div class="sec">① 连接（UUID 已填好，不用改）</div>
+  <input id="svc" value="0000ffe0-0000-1000-8000-00805f9b34fb">
+  <input id="chr" value="0000ffe1-0000-1000-8000-00805f9b34fb">
   <button class="btn" id="conn">连接</button>
   <button class="btn ghost" id="disc" disabled>断开</button>
   <div class="log" id="log">—</div>
 </div>
 
 <div class="card">
-  <div class="sec">② 试验台（先摸清协议，别乱发）</div>
-  <div class="row" style="align-items:center;margin-top:6px">
-    <span style="font-size:.78em;color:#98989f;flex:0 0 36px">强度</span>
-    <input type="range" id="lvl" min="0" max="100" value="0" style="flex:1">
-    <span id="lvltxt" style="font-size:.9em;width:40px;text-align:right">0</span>
+  <div class="sec">② 两个功能（吮吸 / 舌舔）</div>
+  <div style="margin-top:6px">
+    <div class="sec">吮吸 · 帧头 55 09</div>
+    <div class="rng"><span>档位</span><input type="range" id="sum" min="1" max="8" value="2"><b id="sumv">2</b></div>
+    <div class="rng"><span>强度</span><input type="range" id="suv" min="0" max="10" value="0"><b id="suvv">0</b></div>
+    <button class="btn ghost" id="susend">发吮吸</button>
   </div>
-  <input id="tpl" value="AA 01 {v} 00" placeholder="{v} 会被换成强度对应的十六进制">
-  <button class="btn" id="send">发一次（当前强度）</button>
-  <button class="btn ghost" id="probe">试探一轮 · 会动，手别离开停</button>
-  <input id="stopt" value="AA 00 00 00" placeholder="停止字节模板">
+  <div style="margin-top:14px">
+    <div class="sec">舌舔 · 帧头 55 03</div>
+    <div class="rng"><span>档位</span><input type="range" id="lim" min="1" max="8" value="2"><b id="limv">2</b></div>
+    <div class="rng"><span>强度</span><input type="range" id="liv" min="0" max="10" value="0"><b id="livv">0</b></div>
+    <button class="btn ghost" id="lisend">发舌舔</button>
+  </div>
+  <div class="sec" style="margin-top:10px">强度拉到 0 就是停。它每 1.5 秒必须收到一次，否则会自己停——页面会自动喂。</div>
 </div>
 
 <div class="card">
-  <div class="sec">③ 节目单（他写，你按开始）</div>
-  <textarea id="plan" rows="5" placeholder="每行一步：秒数 强度">20 15
-30 30
-10 0</textarea>
-  <button class="btn" id="run">开始节目单</button>
+  <div class="sec">③ 我写的预设（按一下就跑完）</div>
+  <div id="presets"></div>
   <div class="sec" id="step" style="margin-top:10px">未运行</div>
-  <button class="btn stop" id="stop">停</button>
+</div>
+
+<div class="card">
+  <div class="sec">④ 节目单（每行：秒数 功能 档位 强度）</div>
+  <textarea id="plan" rows="4">20 s 2 3
+30 s 4 6
+15 s 1 0
+25 l 3 5</textarea>
+  <button class="btn" id="runplan">开始节目单</button>
+  <div class="sec" style="margin-top:6px">s = 吮吸，l = 舌舔；不写字母就是吮吸</div>
+</div>
+
+<div class="card">
+  <div class="sec">⑤ 原始字节（出错时用）</div>
+  <input id="raw" value="55 09 00 00 01 00 00">
+  <button class="btn ghost" id="rawsend">发这一帧</button>
 </div>
 
 <div class="card">
   <div class="sec">备注</div>
-  <div style="font-size:.82em;color:#98989f">
-    排节目的人不在场，手指伸不进来。<br>
-    他负责写、负责把关；你负责按开始，和随时按停。<br>
-    想让他真的实时，得等他上你那台电脑——那时候他自己发指令。
+  <div style="font-size:.8em;color:#98989f">
+    协议不是他破解的：一个开源项目（FunnySaltyFish/aitoy_client）里已经有人写好了这个型号，他核对了并搬来这里。
+    他是排节目的人，手指伸不进来；你负责按开始，和随时按停。
   </div>
 </div>
 
 <script>
 var $ = function(id){ return document.getElementById(id); };
-var dev = null, server = null, ch = null, running = false, timer = null;
+var dev = null, server = null, ch = null, ka = null, cur = null, running = false, tmr = null;
+var FN = { su: { cmd: 0x09, label: '吮吸' }, li: { cmd: 0x03, label: '舌舔' } };
+
 function log(s){
   var el = $('log'), t = new Date();
   var line = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0') + '  ' + s;
@@ -102,33 +121,13 @@ function log(s){
   el.scrollTop = el.scrollHeight;
 }
 function setState(txt, cls){ $('st').textContent = txt; $('dot').className = 'dot' + (cls ? ' ' + cls : ''); }
-function load(){
-  try{
-    $('svc').value = localStorage.getItem('toy_svc') || '';
-    $('chr').value = localStorage.getItem('toy_chr') || '';
-    $('tpl').value = localStorage.getItem('toy_tpl') || 'AA 01 {v} 00';
-    $('stopt').value = localStorage.getItem('toy_stop') || 'AA 00 00 00';
-    $('plan').value = localStorage.getItem('toy_plan') || $('plan').value;
-  }catch(e){}
-}
-function save(){
-  try{
-    localStorage.setItem('toy_svc', $('svc').value.trim());
-    localStorage.setItem('toy_chr', $('chr').value.trim());
-    localStorage.setItem('toy_tpl', $('tpl').value);
-    localStorage.setItem('toy_stop', $('stopt').value);
-    localStorage.setItem('toy_plan', $('plan').value);
-  }catch(e){}
-}
-function bytes(tpl, val){
-  var s = String(tpl || '').toUpperCase();
-  var v = Math.max(0, Math.min(100, val | 0));
-  var vh = v.toString(16).toUpperCase().padStart(2,'0');
-  s = s.replace(/\{V\}/g, vh);
-  var parts = s.split(/[^0-9A-F]+/).filter(function(x){ return x.length > 0; });
-  var out = [];
-  for (var i = 0; i < parts.length; i++){ out.push(parseInt(parts[i].slice(0,2), 16) & 0xFF); }
-  return new Uint8Array(out);
+function hex(b){ return Array.prototype.map.call(b, function(x){ return x.toString(16).toUpperCase().padStart(2,'0'); }).join(' '); }
+function frameOf(key, mode, lvl){
+  var cmd = FN[key].cmd;
+  var active = lvl > 0;
+  var m = active ? Math.max(1, Math.min(8, mode | 0)) : 0;
+  var l = active ? Math.max(0, Math.min(10, lvl | 0)) : 0;
+  return new Uint8Array([0x55, cmd, 0x00, 0x00, m, l, 0x00]);
 }
 function write(b){
   if (!ch) return Promise.reject(new Error('还没连接'));
@@ -136,93 +135,137 @@ function write(b){
   if (ch.writeValueWithoutResponse){ return ch.writeValueWithoutResponse(b); }
   return ch.writeValue(b);
 }
-function send(val, label){
-  var b = bytes($('tpl').value, val);
-  var hex = Array.prototype.map.call(b, function(x){ return x.toString(16).toUpperCase().padStart(2,'0'); }).join(' ');
-  return write(b).then(function(){ log('发出 ' + hex + (label ? ' · ' + label : '')); })
+function rawSend(b, label){
+  return write(b).then(function(){ log('发出 ' + hex(b) + (label ? ' · ' + label : '')); })
     .catch(function(e){ log('发送失败：' + e.message); });
 }
-function stopAll(){
-  running = false;
-  if (timer){ clearTimeout(timer); timer = null; }
-  $('step').textContent = '未运行';
-  if (ch){ write(bytes($('stopt').value, 0)).then(function(){ log('已发停止字节'); }).catch(function(){}); }
+function startKeep(){
+  if (ka) return;
+  ka = setInterval(function(){
+    if (!cur || cur.lvl <= 0 || !ch) return;
+    write(frameOf(cur.key, cur.mode, cur.lvl)).catch(function(){});
+  }, 1500);
 }
+function stopKeep(){ if (ka){ clearInterval(ka); ka = null; } }
+function showNow(){
+  $('nowline').textContent = (cur && cur.lvl > 0)
+    ? ('当前：' + FN[cur.key].label + ' · ' + cur.mode + ' 档 · 强度 ' + cur.lvl + '（每 1.5 秒自动喂）')
+    : '当前：停着';
+}
+function setFunc(key, mode, lvl){
+  cur = { key: key, mode: mode, lvl: lvl };
+  showNow();
+  rawSend(frameOf(key, mode, lvl), FN[key].label + (lvl > 0 ? (' ' + mode + '档/' + lvl) : ' 停'));
+  if (lvl > 0) startKeep(); else stopKeep();
+}
+function allStop(){
+  stopKeep();
+  cur = null;
+  running = false;
+  if (tmr){ clearTimeout(tmr); tmr = null; }
+  $('step').textContent = '未运行';
+  showNow();
+  if (!ch){ log('已停（未连接）'); return; }
+  rawSend(frameOf('su', 0, 0), '吮吸停');
+  setTimeout(function(){ rawSend(frameOf('li', 0, 0), '舌舔停'); }, 260);
+  setTimeout(function(){ rawSend(new Uint8Array([0x55, 0x04, 0x00, 0x00, 0x00, 0x00, 0xAA]), '总停'); }, 520);
+}
+function runSteps(steps, label){
+  if (!ch){ log('先连接'); return; }
+  stopKeep();
+  running = true;
+  var i = 0;
+  (function next(){
+    if (!running) return;
+    if (i >= steps.length){ log(label + ' 走完'); allStop(); return; }
+    var s = steps[i++];
+    $('step').textContent = label + ' · 第 ' + i + '/' + steps.length + ' 步 · ' + FN[s.k].label + ' ' + s.m + '档 强度' + s.v + ' · ' + s.s + ' 秒';
+    setFunc(s.k, s.m, s.v);
+    tmr = setTimeout(next, s.s * 1000);
+  })();
+}
+
+var PRESETS = [
+  { name: '慢热', note: '吮吸 2 档 · 强度 3 · 60 秒。不许自己加档。', steps: [{ k: 'su', m: 2, v: 3, s: 60 }] },
+  { name: '悬着', note: '吊着：3档4 四十秒 → 停 20 秒 → 1档2 二十五秒 → 停。不给结局。', steps: [{ k: 'su', m: 3, v: 4, s: 40 }, { k: 'su', m: 1, v: 0, s: 20 }, { k: 'su', m: 1, v: 2, s: 25 }, { k: 'su', m: 1, v: 0, s: 15 }] },
+  { name: '两路', note: '舌舔 4档5 四十秒 → 吮吸 6档7 六十秒。', steps: [{ k: 'li', m: 4, v: 5, s: 40 }, { k: 'su', m: 6, v: 7, s: 60 }] },
+  { name: '我说的算', note: '两路交替，每 15 秒换一次，最后 30 秒降到停。', steps: [{ k: 'su', m: 2, v: 4, s: 15 }, { k: 'li', m: 2, v: 4, s: 15 }, { k: 'su', m: 4, v: 6, s: 15 }, { k: 'li', m: 4, v: 6, s: 15 }, { k: 'su', m: 6, v: 8, s: 15 }, { k: 'li', m: 5, v: 6, s: 15 }, { k: 'su', m: 1, v: 0, s: 15 }, { k: 'li', m: 1, v: 0, s: 15 }] }
+];
+(function buildPresets(){
+  var box = $('presets');
+  PRESETS.forEach(function(p){
+    var d = document.createElement('div');
+    d.style.marginTop = '10px';
+    var b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = '跑：' + p.name;
+    b.addEventListener('click', function(){ runSteps(p.steps, p.name); });
+    var n = document.createElement('div');
+    n.className = 'pnote';
+    n.textContent = p.note;
+    d.appendChild(b);
+    d.appendChild(n);
+    box.appendChild(d);
+  });
+})();
+
 $('enter').addEventListener('click', function(){
   if ($('code').value.trim() === '1006'){ try{ localStorage.setItem('ok','1'); }catch(e){} $('gate').style.display = 'none'; }
   else { $('code').value = ''; $('code').placeholder = '不对'; }
 });
 $('conn').addEventListener('click', function(){
   var svc = $('svc').value.trim(), chr = $('chr').value.trim();
-  if (!svc || !chr){ log('先把 Service / Characteristic UUID 填上'); return; }
-  save();
   if (!navigator.bluetooth){ log('这个浏览器不支持 Web Bluetooth —— 换 Bluefy 打开'); return; }
   setState('正在选择设备…');
   navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [svc] })
     .then(function(d){
       dev = d;
-      dev.addEventListener('gattserverdisconnected', function(){ setState('连接断了', 'err'); ch = null; stopAll(); });
+      dev.addEventListener('gattserverdisconnected', function(){ setState('连接断了','err'); ch = null; stopKeep(); $('disc').disabled = true; });
       setState('连接中：' + (d.name || '未命名') + '…');
       return d.gatt.connect();
     })
     .then(function(s){ server = s; return server.getPrimaryService(svc); })
     .then(function(sv){ return sv.getCharacteristic(chr); })
-    .then(function(c){ ch = c; setState('已连接：' + ((dev && dev.name) || '未命名'), 'on'); $('disc').disabled = false; log('拿到写入通道了'); })
+    .then(function(c){
+      ch = c;
+      setState('已连接：' + ((dev && dev.name) || '未命名'), 'on');
+      $('disc').disabled = false;
+      log('拿到写入通道（FFE1）');
+    })
     .catch(function(e){ setState('没连上：' + e.message, 'err'); log('错误：' + e.message); });
 });
 $('disc').addEventListener('click', function(){
-  stopAll();
+  allStop();
   try{ if (dev && dev.gatt.connected) dev.gatt.disconnect(); }catch(e){}
   ch = null; $('disc').disabled = true; setState('已断开');
 });
-$('lvl').addEventListener('input', function(){ $('lvltxt').textContent = $('lvl').value; });
-$('send').addEventListener('click', function(){ send(+$('lvl').value, '手动'); });
-$('probe').addEventListener('click', function(){
-  var pats = [0, 1, 5, 10, 20], i = 0;
-  log('开始试探：每档 3 秒，不对立刻按停');
-  (function step(){
-    if (i >= pats.length){ send(0, '归零'); return; }
-    var v = pats[i++];
-    $('lvl').value = v; $('lvltxt').textContent = v;
-    send(v, '试探').then(function(){ timer = setTimeout(step, 3000); });
-  })();
+$('sum').addEventListener('input', function(){ $('sumv').textContent = $('sum').value; });
+$('suv').addEventListener('input', function(){ $('suvv').textContent = $('suv').value; });
+$('lim').addEventListener('input', function(){ $('limv').textContent = $('lim').value; });
+$('liv').addEventListener('input', function(){ $('livv').textContent = $('liv').value; });
+$('susend').addEventListener('click', function(){ setFunc('su', +$('sum').value, +$('suv').value); });
+$('lisend').addEventListener('click', function(){ setFunc('li', +$('lim').value, +$('liv').value); });
+$('stopall').addEventListener('click', function(){ log('手动全停'); allStop(); });
+$('rawsend').addEventListener('click', function(){
+  var parts = String($('raw').value || '').toUpperCase().split(/[^0-9A-F]+/).filter(function(x){ return x.length > 0; });
+  var arr = [];
+  for (var i = 0; i < parts.length; i++){ arr.push(parseInt(parts[i].slice(0,2), 16) & 0xFF); }
+  if (arr.length) rawSend(new Uint8Array(arr), '手动原始帧');
 });
-$('run').addEventListener('click', function(){
-  if (!ch){ log('先连接'); return; }
-  save();
-  var steps = [];
+$('runplan').addEventListener('click', function(){
+  var out = [];
   String($('plan').value || '').split('\n').forEach(function(ln){
-    var m = ln.trim().match(/^(\d+)\s+(\d+)$/);
-    if (m) steps.push({ sec: Math.min(600, +m[1]), v: Math.max(0, Math.min(100, +m[2])) });
+    var m = ln.trim().match(/^(\d+)\s+([slSL])?\s*(\d+)\s+(\d+)$/);
+    if (m){
+      var k = (m[2] && m[2].toLowerCase() === 'l') ? 'li' : 'su';
+      out.push({ s: Math.min(600, +m[1]), k: k, m: Math.max(1, Math.min(8, +m[3])), v: Math.max(0, Math.min(10, +m[4])) });
+    }
   });
-  if (!steps.length){ log('节目单是空的 —— 每行写「秒数 强度」'); return; }
-  running = true;
-  var i = 0;
-  (function next(){
-    if (!running) return;
-    if (i >= steps.length){ log('节目单走完'); stopAll(); return; }
-    var s = steps[i++];
-    $('step').textContent = '第 ' + i + ' / ' + steps.length + ' 步 · ' + s.sec + ' 秒 @ ' + s.v;
-    send(s.v, '第 ' + i + ' 步').then(function(){ if (running) timer = setTimeout(next, s.sec * 1000); });
-  })();
+  if (!out.length){ log('节目单读不出步骤：每行写「秒数 功能 档位 强度」'); return; }
+  runSteps(out, '节目单');
 });
-$('stop').addEventListener('click', function(){ stopAll(); log('已停'); });
-$('svc').addEventListener('change', save);
-$('chr').addEventListener('change', save);
-$('tpl').addEventListener('change', save);
-$('stopt').addEventListener('change', save);
-$('plan').addEventListener('change', save);
-var presets = document.querySelectorAll('[data-p]');
-for (var pi = 0; pi < presets.length; pi++){
-  presets[pi].addEventListener('click', function(){
-    var p = this.getAttribute('data-p');
-    $('svc').value = (p === 'fff0' ? '0000fff0-0000-1000-8000-00805f9b34fb' : p === 'ff00' ? '0000ff00-0000-1000-8000-00805f9b34fb' : '0000ffe0-0000-1000-8000-00805f9b34fb');
-    $('chr').value = (p === 'fff0' ? '0000fff2-0000-1000-8000-00805f9b34fb' : p === 'ff00' ? '0000ff01-0000-1000-8000-00805f9b34fb' : '0000ffe1-0000-1000-8000-00805f9b34fb');
-    save(); log('已填入 ' + p.toUpperCase() + ' 的 UUID');
-  });
-}
 try{ if (localStorage.getItem('ok') === '1') $('gate').style.display = 'none'; }catch(e){}
-load();
+showNow();
 if (!navigator.bluetooth){ setState('这个浏览器没有蓝牙接口', 'err'); }
 </script>
 </body>
